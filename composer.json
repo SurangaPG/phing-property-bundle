@@ -1,4 +1,15 @@
 {
+    "name": "surangapg/phing-property-bundle",
+    "description": "Helper to make it easier to load entire config directories into phing properties.",
+    "keywords": ["build", "tool", "task", "phing"],
+    "homepage": "https://github.com/SurangaPG/phing-property-bundle",
+    "license": "LGPL-3.0",
+    "authors": [
+        {
+            "name": "Suranga Gamage",
+            "email": "suranga@webct.be"
+        }
+    ],
     "require": {
         "phing/phing": "^2.16"
     }
