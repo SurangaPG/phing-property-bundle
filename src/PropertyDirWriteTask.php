@@ -152,7 +152,9 @@ class PropertyDirWriteTask extends PropertyTask {
       // Overwrite the data to generate a proper aggregated file.
       $data = [];
       foreach ($levels as $level => $fileName) {
-        $data = array_replace_recursive($data, Yaml::parse(file_get_contents($fileName)));
+        $extraData = Yaml::parse(file_get_contents($fileName));
+        $extraData = isset($extraData) ? $extraData : [];
+        $data = array_replace_recursive($data, $extraData);
       }
 
       // Write out the data to the calculated dir
