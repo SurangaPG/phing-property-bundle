@@ -42,6 +42,13 @@ class PropertyDirWriteTask extends PropertyTask {
   private $outputFull = false;
 
   /**
+   * @TODO This is a dirty hack to bypass the verbosity of the command.
+   *
+   * @var FileParserFactoryInterface
+   */
+  protected $shadowedFileParserFactory;
+
+  /**
    * @param $outputFull
    */
   public function setOutputFull($outputFull) {
@@ -99,6 +106,15 @@ class PropertyDirWriteTask extends PropertyTask {
   }
 
   /**
+   * PropertyDirWriteTask constructor.
+   * @param \FileParserFactoryInterface|NULL $fileParserFactory
+   */
+  public function __construct(\FileParserFactoryInterface $fileParserFactory = NULL) {
+    $this->shadowedFileParserFactory = $fileParserFactory != null ? $fileParserFactory : new FileParserFactory();
+    parent::__construct($this->shadowedFileParserFactory);
+  }
+
+  /**
    * @param $orderedFiles
    */
   protected function cleanUpTempFiles($orderedFiles) {
@@ -145,8 +161,9 @@ class PropertyDirWriteTask extends PropertyTask {
   protected function loadCalculatedFiles($orderedFiles) {
 
     // Import all the values.
+    $this->log(sprintf("Regenerating properties for: %s", implode(', ', array_keys($orderedFiles))) , Project::MSG_INFO);
     foreach ($orderedFiles as $type => $levels) {
-      $this->log(sprintf("Loading properties for %s.yml (found: %s)", $type, implode('>', array_keys($levels))) , Project::MSG_INFO);
+      $this->log(sprintf("Regenerating properties for %s.yml (found: %s)", $type, implode('>', array_keys($levels))) , Project::MSG_VERBOSE);
       $this->setPrefix($type);
 
       // Overwrite the data to generate a proper aggregated file.
@@ -166,6 +183,32 @@ class PropertyDirWriteTask extends PropertyTask {
       // Now load the new fully generated file in as properties for the project.
       $file = new PhingFile($tempFileName);
       $this->loadFile($file);
+    }
+  }
+
+  /**
+   * load properties from a file.
+   * @param PhingFile $file
+   * @throws BuildException
+   */
+  protected function loadFile(PhingFile $file)
+  {
+    // However, this means we bypass the private fileParserFactory passed
+    $fileParser = $this->shadowedFileParserFactory->createParser($file->getFileExtension());
+    $props = new Properties(null, $fileParser);
+    $this->log("Loading " . $file->getAbsolutePath(), Project::MSG_VERBOSE);
+    try { // try to load file
+      if ($file->exists()) {
+        $props->load($file);
+        $this->addProperties($props);
+      } else {
+        $this->log(
+          "Unable to find property file: " . $file->getAbsolutePath() . "... skipped",
+          Project::MSG_WARN
+        );
+      }
+    } catch (IOException $ioe) {
+      throw new BuildException("Could not load properties from file.", $ioe);
     }
   }
 
